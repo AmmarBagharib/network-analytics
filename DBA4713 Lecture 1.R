@@ -39,6 +39,7 @@ netval1 <- rbind(c(0,2,3,0,0),
                  c(0,1,0,0,0),
                  c(0,0,0,0,0),
                  c(0,0,2,0,0))
+
 netval1 <- network(netval1,matrix.type="adjacency",
                    ignore.eval=FALSE,names.eval="like")
 
@@ -96,7 +97,6 @@ str(inet3)
 plot.igraph(inet3,vertex.label=V(inet3)$name,
             edge.width=E(inet3)$weight,edge.color="black",
             layout=layout.fruchterman.reingold)
-
 
 #Filtering
 detach(package:igraph)
