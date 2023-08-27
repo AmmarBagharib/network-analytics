@@ -1,0 +1,220 @@
+---
+title: "lecture-2"
+author: "Ammar"
+date: "2023-08-27"
+output: 
+  bookdown::html_document2:
+      toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+- load package
+
+```{r message=FALSE, warning=FALSE}
+library(igraph)
+library(here)
+```
+
+# load edgelist
+
+```{r}
+# Step 1: Read the edge list from the .txt file
+file_path <- here("lecture-2/collaboration.edgelist.txt")
+edge_list <- read.table(file_path, sep = "\t", header = FALSE)
+#convert to an igraph network
+matrix1 <- as.matrix(edge_list) #igraph wants our data in matrix format
+head(matrix)
+class(matrix1)
+```
+
+
+- note, there are 0s which will result in an error when we using the graph_from_edgelist function. we can solve this by adding all of the items in the edgelist by 1
+
+# Attempt at ploting a graph
+
+```{r fig.width=14, fig.height=15}
+# Step 2: Adjust vertex IDs to start from 1
+adjusted_edge_list <- as.matrix(edge_list + 1)
+
+net1 <- graph.edgelist(adjusted_edge_list, directed=FALSE)
+
+library(RBioFabric)
+bioFabric(net1)
+```
+
+
+- as we can see, in this visualisation, the nodes are depicted as horizontal lines, not as points, instead of circles, and the edges are represented as one-dimensional vertical line segments. we can see from this visualisation that there are certain vertices that are much more connected to other vertices within the network (the length of the horizontal line). 
+
+# Graph Analysis
+
+## Size & Density
+
+```{r}
+### Number of Nodes
+nodes <- igraph::vcount(net1)
+
+### Number of Edges
+edges <- igraph::gsize(net1)
+
+## Density
+density <- igraph::graph.density(net1) 
+
+# the density is a value between 0 and 1, where 0 represents a completely sparse graph (no edges) and 1 represents a complete graph (all possible edges present).
+
+print(paste("Number of Nodes:", nodes))
+print(paste("Number of Edges:", edges))
+print(paste("Density:", density))
+
+```
+
+## Degree Centrality Plot
+
+```{r}
+# Calculate degree centrality for each vertex
+degree_centrality <- degree(net1)
+
+# Create a histogram of degree centrality
+hist(degree_centrality, main = "Degree Centrality Distribution",
+     xlab = "Degree Centrality", ylab = "Frequency", col="darkblue")
+```
+
+We can see that most nodes are lowly linked
+
+## Diameter
+
+- It is the shortest distance between the two most distant nodes in the network. In other words, once the shortest path length from every node to all other nodes is calculated, the diameter is the longest of all the calculated path lengths
+
+```{r}
+# Calculate the diameter of the graph
+diameter <- diameter(net1)
+print(paste("Diameter of the graph:", diameter))
+```
+
+## Connectedness
+```{r}
+igraph::is.connected(net1)
+```
+
+- From our above analysis, we can observe that the network is disconnected. Let us split them into their components.
+
+- Let us analyse the largest component
+
+# Largest Components Analysis
+
+In the most of research topics of network analysis, network features are related to the largest connected component of a graph(Newman 2010). In order to get that for an igraph or a network object, `giant_component_extract` function is specified. For using this function we can do:
+
+## load CINNA for further analyses
+
+```{r message=FALSE, warning=FALSE}
+library(CINNA)
+```
+
+## Identify the Largest Component:
+
+```{r}
+largest_component_graph <- CINNA::giant_component_extract(net1)[[1]]
+```
+
+
+## Largest Component properties
+
+```{r}
+### Number of Nodes
+largest_nodes <- igraph::vcount(largest_component_graph)
+
+### Number of Edges
+largest_edges <- igraph::gsize(largest_component_graph)
+
+## Density
+largest_density <- igraph::graph.density(largest_component_graph) 
+
+print(paste("Subgraph is connected:", is.connected(largest_component_graph)))
+print(paste("Number of Nodes:", largest_nodes))
+print(paste("Number of Edges:", largest_edges))
+print(paste("Density:", largest_density))
+```
+
+## Suitable centrality measures
+
+All of the introduced centrality measures are not appropriate for all types of networks. So, to figure out which of them is suitable, `proper_centralities` is specified. This function distinguishes proper centrality types based on network topology. To use this, we can do:
+
+```{r}
+proper_centrality <- head(CINNA::proper_centralities(largest_component_graph), 1)
+head(proper_centrality, 10)
+```
+
+- notice how closeness and degree centrality is brought up. Thus let us explore these measures.
+
+## Degree centrality
+
+```{r}
+head(
+  sort(
+    calculate_centralities(
+      largest_component_graph, 
+      include = "Degree Centrality"
+      )[[1]], #unlist because this function returns a list object of length 1
+    decreasing = TRUE
+    ), 
+  20
+  )
+```
+
+- we can note how there are nodes that are highly connected to other nodes within the network. Thus, this implies high degree centrality within the network.
+
+## Closeness centrality
+
+```{r}
+head(
+  sort(
+    calculate_centralities(
+      largest_component_graph, 
+      include = "Closeness Centrality (Freeman)"
+      )[[1]], #unlist because this function returns a list object of length 1
+          decreasing = TRUE
+    ), 
+  20
+  )
+```
+
+- we can note how the the highest value of closeness is in fact significantly low. Since closeness is defined as the inverse of the sum of distances to all the other vertices in the graph, this tells us that the network has low closeness.
+
+Thus, a conclusion we can draw for this largest component
+
+- Low Closeness
+- High Degree
+
+The local clustering coefficient focuses on individual nodes and their immediate neighborhoods. It quantifies how close a node's neighbors are to forming a complete subgraph. Probability that neighbors of a vertex are also connected.
+
+## Clustering Coefficient/ Transitivity
+```{r}
+transitivity <- igraph::transitivity(largest_component_graph)
+transitivity
+```
+
+- This tells us that we are dealing with a distant network, since a very small portion of the neighbours within a network is connected to one another.
+
+
+# Visualization of centrality analysis
+
+After evaluating centrality measures, demonstrating high values of centralities in some nodes gives an overall insight about the network to the researcher. By using visualize_graph function, you will be able to illustrate the input graph based on the specified centrality value. If the centrality measure values were computed, `computed.centrality.value` argument is recommended. Otherwise, using `centrality.type` argument, the function will compute centrality based on the input name of centrality type. For practice, we specifie Degree Centrality. Here,
+
+```{r}
+visualize_graph( largest_component_graph , centrality.type="Degree Centrality")
+```
+
+- not very useful visualisation :(
+
+
+```{r}
+
+# Plot the subgraph of the neighborhood
+plot(largest_component_graph)
+
+```
+
+
+
