@@ -1,6 +1,4 @@
 #install.packages("statnet")
-#statnet
-
 {
 library(statnet)
 
@@ -63,8 +61,7 @@ detach(package:statnet)
 #install.packages("igraph")
 }
 
-# igraph
-{
+
 library(igraph)
 
 netmat1 <- rbind(c(0,1,1,0,0),
@@ -113,11 +110,6 @@ plot.igraph(inet2,vertex.label=V(inet2)$name,
 
 #Filtering
 detach(package:igraph)
-
-}
-
-# Filtering
-{
 library(statnet)
 netmat1 <- rbind(c(0,1,1,0,0),
                  c(0,0,1,1,0),
@@ -135,9 +127,6 @@ gplot(n1F,displaylabels=TRUE)
 
 
 detach(package:statnet)
-
-}
-
 library(igraph)
 netval2<- as.data.frame(rbind(c("A","B",2),
                               c("A","C",1),
