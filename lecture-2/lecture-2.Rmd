@@ -35,7 +35,7 @@ class(matrix1)
 
 # Attempt at ploting a graph
 
-```{r fig.width=14, fig.height=15}
+```{r fig.width=56, fig.height=24}
 # Step 2: Adjust vertex IDs to start from 1
 adjusted_edge_list <- as.matrix(edge_list + 1)
 
