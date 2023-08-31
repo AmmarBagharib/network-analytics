@@ -1,5 +1,5 @@
 # Network Analytics in R
-A semester long module taught by Dr. Tan Tianhui in which I learn real world network analytics using R an Giphy.
+An ongoing semester long module taught by Dr. Tan Tianhui in which I learn real world network analytics using R an Giphy.
 
 Network analytics, also known as network analysis or graph analytics, is a field of study that involves analyzing and interpreting the relationships and interactions among entities within a network. A network can be represented as a graph, where entities are nodes and relationships are edges, and network analytics aims to extract valuable insights and patterns from this representation.
 
