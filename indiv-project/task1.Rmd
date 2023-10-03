@@ -11,15 +11,16 @@ output:
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r message=FALSE, warning=FALSE}
+```{r load-packages, message=FALSE, warning=FALSE}
 library(igraph)
 library(here)
 library(data.table)
 ```
 
-# Graph summary
+# Qn 1a
 
-```{r Summary}
+## Graph Structure
+```{r graph-structure }
 # Step 1: Read the edge list from the .txt file
 file_path_2000 <- here("indiv-project/trade-network/2000.net")
 g2000 <- read_graph(file_path_2000,format="pajek")
@@ -27,9 +28,7 @@ g2000 <- read_graph(file_path_2000,format="pajek")
 str(g2000)
 ```
 
-# Graph Level Attributes
-
-## Absolute attributes check
+## Graph Level Attributes
 
 **Number of Nodes:** `r vcount(g2000)`
 
@@ -49,16 +48,13 @@ str(g2000)
 
 **Diameter of Graph:** `r diameter(g2000)`
 
-
-### Review
-
 There are 161 countries represented in the trade network and a total of 16,335 trade relationships (edges) in the network, indicating a **relatively dense** network.The graph density is approximately 0.634, which suggests that about 63.4% of all possible trade relationships between countries are present. This indicates a **relatively connected** network. The diameter of the graph is 558.699. This represents the longest shortest path between any two countries in the trade network, which is a measure of the network's overall size.
 
 The entire network forms a single connected component with all 161 countries, indicating that there are **no isolated subnetworks**.The global transitivity (clustering coefficient) is approximately 0.842, suggesting that there is a **significant tendency** for groups of countries to engage in trade with one another, forming clusters or communities within the network. The average transitivity is approximately 0.871, which is similar to the global transitivity. This further confirms a **high degree of clustering** within the network. The largest clique in the network consists of 81 countries. This indicates the **presence of a highly interconnected group of countries** that trade extensively with each other.
 
-# Vertex Attributes
+## Vertex Attributes
 
-```{r Attributes}
+```{r vertex-attributes}
 # store attributes into a data.frame
 df=data.frame(vertex_id=V(g2000),
               vertex_name=V(g2000)$name,
@@ -74,7 +70,7 @@ knitr::kable(
 )
 ```
 
-### Review
+### Betweenness and Transitivity
 
 **Betweenness Centrality:** 
 
@@ -87,9 +83,9 @@ knitr::kable(
 - The values range from 0.7591 to 0.9933, suggesting that many countries form tightly interconnected groups in trade networks.
 
 
-## Degree Distribution
+### Degree Distribution
 
-```{r fig.cap="Degree Distribution"}
+```{r degree-plot, fig.cap="Degree Distribution"}
 hist_deg <- hist(
   degree(g2000),
   main="Degree Distribution",
@@ -105,11 +101,9 @@ hist_deg_df <- data.frame(
 knitr::kable(hist_deg_df, caption = "Degree Histogram Bins Table")
 ```
 
-### Review
-
 Here's a brief description of the degree distribution:
 
-Based on Table 3.2
+Based on Figure \@ref(fig:degree-plot)
 The degree distribution provides insights into how countries in the trade network are connected or how many connections (edges) they have. The midpoint values represent the central values of degree ranges or bins.
 
 - The frequency column shows that the majority of nodes in the network have degrees between 151 and 250 (175-225 midpoint), as this bin has the highest frequency of 42 nodes.
@@ -120,9 +114,9 @@ The degree distribution provides insights into how countries in the trade networ
 
 When looking purely at degree, this distribution suggests that a **substantial** number of nodes have a **moderate** degree of connectivity, while a **smaller** number of nodes have either **low or high degrees**.
 
-## Closeness Distribution
+### Closeness Distribution
 
-```{r fig.cap="Closeness Distribution"}
+```{r close-plot, fig.cap="Closeness Distribution"}
 hist(
   closeness(g2000),
   main="Closeness Distribution",
@@ -132,7 +126,7 @@ hist(
 ```
 
 
-```{r fig.cap="Filtered Closeness Distribution"}
+```{r filtered-close-plot, fig.cap="Filtered Closeness Distribution"}
 #closeness for each node - there are NaN values
 closeness_values <- closeness(g2000)
 
@@ -159,13 +153,9 @@ hist_closeness_df <- data.frame(
 knitr::kable(hist_closeness_df, caption = "Closeness Histogram Bins Table")
 ```
 
-
-### Review
-
 Overall, the closeness centrality values are generally very low, with a maximum of no more than 0.0012. Nonetheless, here are some findings:
 
-Based on Table 3.3
-- 121 out of 161 countries have closeness centrality of between 0.000775 and 0.000975, which is relatively very high.
+Based on Figure \@ref(fig:filtered-close-plot) 121 out of 161 countries have closeness centrality of between 0.000775 and 0.000975, which is relatively very high.
 
 - Only 1 country is within the highest closeness centrality bin of 0.001175, indicating that it is very well-connected and have shorter average distances to other countries, indicating strong trade relationships. This can mean that it in the year 2000, it was a Trade Global powerhouse.
 
@@ -173,9 +163,9 @@ Based on Table 3.3
 
 - The trade network may consist of multiple connected components, with some countries forming isolated sub-networks. Countries within such isolated components may have NaN closeness centrality values.
 
-## Eigen Centrality
+### Eigen Centrality
 
-```{r fig.cap="Eigen Centrality"}
+```{r eigen-plot, fig.cap="Eigen Centrality"}
 hist(
   eigen_centrality(g2000)$vector,
   main="Eigen Centrality Distribution",
@@ -184,7 +174,7 @@ hist(
   )
 ```
 
-```{r fig.cap="subset of Eigen Centrality" }
+```{r filtered-eigen-plot, fig.cap="subset of Eigen Centrality" }
 hist(
   eigen_centrality(g2000)$vector,
   breaks=seq(0,max(eigen_centrality(g2000)$vector)+ 0.00005,by=0.001),
@@ -195,10 +185,7 @@ hist(
   )
 ```
 
-### Review
-
-Based on Fig 3.5
-Approximately 60 countries have eigen centrality values of between 0 to 0.001, and this forms the majority of the countries.  
+Based on Figure \@ref(fig:filtered-eigen-plot) approximately 60 countries have eigen centrality values of between 0 to 0.001, and this forms the majority of the countries.  
 
 - Countries with eigen centrality values in this range are likely to be peripheral or less influential in the global trade network. They may have limited trade connections or trade relationships that are not strongly influential on a global scale.
 
