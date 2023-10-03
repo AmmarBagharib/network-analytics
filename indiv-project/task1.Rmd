@@ -1,0 +1,69 @@
+---
+title: "lecture-2"
+author: "Ammar"
+date: "2023-09-03"
+output: 
+  bookdown::html_document2:
+      toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+- load package
+
+```{r message=FALSE, warning=FALSE}
+library(igraph)
+library(here)
+library(data.table)
+```
+
+# load graph and summary
+
+```{r}
+# Step 1: Read the edge list from the .txt file
+file_path_2000 <- here("indiv-project/trade-network/2000.net")
+g2000 <- read_graph(file_path_2000,format="pajek")
+
+str(g2000)
+summary(g)
+print(paste("Number of Nodes:", vcount(g2000)))
+print(paste("Number of Edges:", ecount(g2000)))
+print(paste("Graph Density:", graph.density(g2000)))
+```
+
+# Graph Level Attributes
+
+```{r}
+hist(degree(g2000),main="Degree Distribution",xlab="Degree",ylab="Number of Vertices")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

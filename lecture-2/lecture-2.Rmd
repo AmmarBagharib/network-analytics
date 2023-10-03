@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r message=FALSE, warning=FALSE}
 library(igraph)
 library(here)
+library(data.table)
 ```
 
 # load edgelist
@@ -23,7 +24,7 @@ library(here)
 ```{r}
 # Step 1: Read the edge list from the .txt file
 file_path <- here("lecture-2/collaboration.edgelist.txt")
-edge_list <- read.table(file_path, sep = "\t", header = FALSE)
+edge_list <- fread(file_path, colClasses = "character")
 #convert to an igraph network
 matrix1 <- as.matrix(edge_list) #igraph wants our data in matrix format
 head(matrix)

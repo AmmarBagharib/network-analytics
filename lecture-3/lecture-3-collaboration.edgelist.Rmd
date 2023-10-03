@@ -1,0 +1,276 @@
+---
+title: "lecture-3-collaboration.edgelist"
+author: "Ammar"
+date: "2023-08-28"
+output: 
+  bookdown::html_document2:
+      toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+load packages
+```{r}
+library(data.table)
+library(here)
+data <- fread(here("lecture-3/collaboration.edgelist.txt"),colClasses = "character") # 93439 x 2 : V1, V2
+```
+
+# Loading Edgelist dataset
+```{r}
+# exploring the input data
+nrow(unique(data))
+head(data)
+```
+explore whether the data set is directional / bi-directional
+
+- A collaboration should be a mutual agreement
+
+```{r paged.print=TRUE}
+data[V1=="1680"]
+data[V2=="1680"]
+data[V1=="4131"]
+data[V2=="4131"]
+```
+# exploring degree using basic data manipulation
+
+```{r}
+length(unique(c(data$V1,data$V2))) # 23133 values, from 0 to 23132
+
+head(data[,.(cnt=.N),by=.(V1)])
+
+# data table pipe operator is [where, select, group by ]
+data[,.(cnt=.N),by=.(V1)][order(-cnt)][1:10]
+
+rbind(data[,.(cnt=.N),by="V1"],data[,.(cnt=.N),by="V2"],use.names=FALSE)[,.(degree=sum(cnt)),by="V1"][1:15]
+
+```
+# converting edge.list to matrix
+
+```{r}
+library(reshape2)
+mat=dcast(data[1:20,],V1~V2,fun.aggregate=length,value.var="V2")
+rownames(mat)=mat$V1
+mat=mat[,-1]
+mat #note how mat stores 0s, thus matrix storing in R is very space consuming
+rowSums(mat)
+```
+
+# converting edge.list to adjacency matrix
+```{r}
+
+library(igraph)
+g=graph.edgelist(as.matrix(data),directed=F)
+adj_matrix=get.adjacency(g,type="both",sparse=TRUE) #sparse allows us to read edgelist, reads only the ones, the 0s are stores as ".", thus the conversion is quick
+adj_matrix[1:10, 1:10]
+```
+
+
+# exploring different metrics
+
+## Degree
+
+```{r}
+degree(g)[1:10]
+```
+
+## Closeness
+
+```{r}
+closeness(g)[1:10]
+```
+
+
+## Betwenness
+
+```{r}
+betweenness(g)[1:10]
+```
+
+## Summary
+
+```{r}
+summary(g)
+```
+
+## Number of Nodes
+
+```{r}
+vcount(g)
+```
+
+## Number of Edges
+
+```{r}
+ecount(g)
+```
+
+## Graph Density
+```{r}
+graph.density(g)
+
+```
+
+# Graph Analysis
+
+## Plotting
+
+```{r}
+hist(degree(g),main="Degree Distribution",xlab="Degree",ylab="Number of Vertices")
+hist(degree(g),breaks=seq(0,max(degree(g)),by=1),xlim=c(0, 50),
+     main="Degree Distribution",xlab="Degree",ylab="Number of Vertices")
+```
+
+## Shortest Paths
+
+```{r}
+shortest_paths(g,from="0", to="15750")$vpath[[1]]
+```
+
+## Diameter
+
+```{r}
+diameter(g)
+```
+
+## Components
+
+```{r}
+components(g)$membership[1:10]
+components(g)$csize[1:10]
+components(g)$no
+```
+
+### Size
+
+```{r}
+max(components(g)$csize)
+```
+
+### Largest Component
+
+```{r}
+largest_component(g)[1:10]
+```
+
+## Clustering Coefficients
+
+```{r}
+transitivity(g,type="global")
+transitivity(g,type="average") 
+```
+
+# vertex-level attributes
+
+## Clustering coefficient
+
+```{r}
+transitivity(g,type="local")[1:10]
+mean(transitivity(g,type="local"),na.rm=T)
+```
+
+## Degree
+
+```{r}
+degree(g)[1:10]
+```
+
+## Closeness
+
+```{r}
+closeness(g)[1:10]
+```
+
+## Betweenness
+
+```{r}
+betweenness(g,normalized=T)[1:10]
+```
+
+## Eigen centrality
+
+```{r}
+eigen_centrality(g)$vector[1:10]
+```
+
+## Edge betweenness
+
+```{r}
+# edge-level attributes
+edge.betweenness(g)[1:10]
+#E(g)$weight # if we want to explore weights of edges
+```
+
+# store attributes into a data.frame
+
+## summary of attributes
+
+```{r}
+df=data.frame(vertex_id=V(g),
+              vertex_name=V(g)$name,
+              degree=degree(g),
+              closeness=closeness(g),
+              betweenness=betweenness(g,normalized=T),
+              transitivity=transitivity(g,type="local"))
+summary(df[-c(1,2)])
+```
+
+## Correlation between attributes of entire graph
+
+```{r}
+cor(df[-c(1,2)],use="complete.obs") #
+```
+
+Although we learnt that centrality measures should be positively correlated, there are some negatively correlated centrality measures, e.g., closeness and degree.
+
+Reason: 
+
+When we analyse the entire graph, there are disconnected components. As a result, you cannot calculate betweenness for a component in which there is only one node. Thus, this graph attributes is already biased. Hence, it is a more fair analysis to analyse a connected component.
+
+## Correlation between attributes of largest component
+
+```{r}
+dt=data.table(df[-c(1)]) #remove first column
+cor(dt[vertex_name%in%V(largest_component(g))$name,-c(1)],use="complete.obs")
+```
+
+
+
+
+# Simple Regression Model using network information
+
+```{r}
+# a simple regression by randomly creating additional variables
+set.seed(4713) # for project replication
+dt[,age:=sample(20:40,nrow(dt),replace=T)]
+dt[,tenure:=runif(nrow(dt),1,6)]
+dt[,rating:=sample(1:5,nrow(dt),replace=T)]
+summary(dt)
+
+# here we add node level attributes into our linear regression
+summary(lm(rating~
+             age+tenure+degree+closeness+betweenness+transitivity,
+           data=dt)) 
+```
+
+
+# Visualization
+
+```{r}
+#plot(g)
+sub_g=induced_subgraph(g, vids=V(g)[1:10]) #as there are too many nodes to plot
+plot(sub_g)
+plot(sub_g,
+     vertex.size=50,vertex.color="green",vertex.label.color="black", 
+     edge.color="grey",edge.width=2)
+plot(sub_g,
+     layout=layout.fruchterman.reingold)
+plot(sub_g,
+     layout=layout.circle)
+
+```
+
+
+

@@ -3,11 +3,15 @@
 
 ## 1) why to use igraph? ####
 library(data.table)
-data = fread("collaboration.edgelist.txt",colClasses = "character") # 93439 x 2 : V1, V2
+library(here)
+data <- fread(here("lecture-3/collaboration.edgelist.txt"),colClasses = "character") # 93439 x 2 : V1, V2
 
 # exploring the input data
 nrow(unique(data))
 head(data)
+
+# explore whether the data set is directional / bi-directional
+# but a collaboration should be a mutual agreement
 data[V1=="1680"]
 data[V2=="1680"]
 data[V1=="4131"]
