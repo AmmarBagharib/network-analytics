@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(igraph)
 library(here)
 library(data.table)
+library(ggplot2)
 ```
 
 # Qn 1a
@@ -85,34 +86,47 @@ knitr::kable(
 
 ### Degree Distribution
 
-```{r degree-plot, fig.cap="Degree Distribution"}
-hist_deg <- hist(
-  degree(g2000),
-  main="Degree Distribution",
-  xlab="Degree",
-  ylab="Number of Countries"
-  )
-
-hist_deg_df <- data.frame(
-  Midpoint = hist_deg$mids,
-  Frequency = hist_deg$counts
-)
-
-knitr::kable(hist_deg_df, caption = "Degree Histogram Bins Table")
+```{r}
+# Country Exports Table
+deg_df <- data.table(as_long_data_frame(g2000)[c("from_name", "to_name")])
+out_deg_df <- deg_df[,.(cnt=.N),by=.(to_name)]
+in_deg_df <- deg_df[,.(cnt=.N),by=.(from_name)]
 ```
 
-Here's a brief description of the degree distribution:
+#### Exports Distribution
+
+```{r out-degree-plot, fig.cap="Out Degree Distribution"}
+# Create a histogram using ggplot2
+exports_plot <- ggplot(out_deg_df, aes(x = cnt)) +
+  geom_histogram(binwidth = 10, fill = "grey", color = "black") +  # Adjust binwidth and colors
+  labs(
+    title = "Histogram of Out Degree (Exports)",
+    x = "Degree",
+    y = "Number of Countries Exported to"
+  ) + scale_x_continuous(breaks=seq(0,161,10))
+
+exports_plot
+```
+
+#### Imports Distribution
+
+```{r in-degree-plot, fig.cap="In Degree Distribution"}
+# Create a histogram using ggplot2
+imports_plot <- ggplot(in_deg_df, aes(x = cnt)) +
+  geom_histogram(binwidth = 10, fill = "grey", color = "black") +  # Adjust binwidth and colors
+  labs(
+    title = "Histogram of In Degree (Imports)",
+    x = "Degree",
+    y = "Number of Countries Exported to"
+  ) + scale_x_continuous(breaks=seq(0,161,10))
+
+imports_plot
+```
+
+Brief description of the degree distribution:
 
 Based on Figure \@ref(fig:degree-plot)
-The degree distribution provides insights into how countries in the trade network are connected or how many connections (edges) they have. The midpoint values represent the central values of degree ranges or bins.
-
-- The frequency column shows that the majority of nodes in the network have degrees between 151 and 250 (175-225 midpoint), as this bin has the highest frequency of 42 nodes.
-
-- There is a moderate number of nodes with degrees between 101 and 150 (125-175 midpoint) and between 251 and 300 (275-325 midpoint).
-
-- There are fewer nodes with degrees below 100 or above 300.
-
-When looking purely at degree, this distribution suggests that a **substantial** number of nodes have a **moderate** degree of connectivity, while a **smaller** number of nodes have either **low or high degrees**.
+The degree distribution provides insights into how countries in the trade network are connected or how many connections (edges) they have. 
 
 ### Closeness Distribution
 
@@ -159,7 +173,7 @@ Based on Figure \@ref(fig:filtered-close-plot) 121 out of 161 countries have clo
 
 - Only 1 country is within the highest closeness centrality bin of 0.001175, indicating that it is very well-connected and have shorter average distances to other countries, indicating strong trade relationships. This can mean that it in the year 2000, it was a Trade Global powerhouse.
 
-- The presence of 19 countries with missing closeness centrality values suggests that these countries may have limited closeness centrality due to their relative isolation in trade. They may have a limited number of trade partners or may not have any direct trade relationships with other countries. In such cases, the country's closeness centrality could be NaN because there are no paths to reach it from other countries.
+- The presence of 19 countries with missing closeness centrality values suggests that these countries might only accept imports and not do exports.
 
 - The trade network may consist of multiple connected components, with some countries forming isolated sub-networks. Countries within such isolated components may have NaN closeness centrality values.
 
