@@ -100,16 +100,6 @@ hist_plot <- function(table, title, xlab, ylab){
 
 ### Closeness Distribution
 
-```{r close-plot, fig.cap="Closeness Distribution"}
-hist(
-  closeness(g2000),
-  main="Closeness Distribution",
-  xlab="Closeness",
-  ylab="Number of Countries"
-  )
-```
-
-
 ```{r filtered-close-plot, fig.cap="Filtered Closeness Distribution"}
 #closeness for each node - there are NaN values
 closeness_values <- closeness(g2000)
@@ -142,7 +132,7 @@ hist_plot(
 
 Overall, the closeness centrality values are generally very low, with a maximum of no more than 0.00116. Nonetheless, here are some findings:
 
-Based on Figure \@ref(fig:filtered-close-plot) 124 out of 161 countries have closeness centrality $\ge$ 0.000702, which is relatively high.
+Based on Figure \@ref(fig:filtered-close-plot) over 120 out of 161 countries have closeness centrality $\ge$ 0.000702, which is relatively high.
 
 - The presence of `r length(nan_vertices)` countries with missing closeness centrality values suggests that these countries might only accept imports and not do exports.
 
@@ -247,9 +237,9 @@ Brief description of the degree distribution:
 Based on Figure \@ref(fig:in-degree-plot) and Figure \@ref(fig:out-degree-plot)
 We can understand that most countries are generally well connected. However, we should explore the distribution of export power and import power of each country We can define export and import power as follows:
 
-$export power = \displaystyle \frac{exports}{exports + imports}$
+$export\,power = \displaystyle \frac{exports}{exports + imports}$
 
-$import power = \displaystyle \frac{imports}{exports + imports}$
+$import\,power = \displaystyle \frac{imports}{exports + imports}$
 
 Let us first look at it the export/ import power from a **degree** perspective
 
@@ -315,7 +305,7 @@ This shows that in general, countries generally have more export ties than impor
 Now, let us take a look at the export/ import power from a **trade volume** perspective
 
 
-### Trade Volume
+### Trade Volume vs Ties
 
 ```{r create-volume-tables}
 trade_df <- data.table(as_long_data_frame(g2000))[, c("weight", "from_name", "to_name")]
@@ -438,9 +428,66 @@ im_slope_coefficient <- coef(model)[2]  # Extracts the coefficient for 'export_t
 
 **Slope Coefficient of Best Fit line:** `r im_slope_coefficient`
 
+**Positive Linear Relationship: **
+The log-transformed total import volume and the number of import ties show a positive linear relationship. As the number of import ties increases, the log-transformed import volume tends to increase as well. This suggests that there is a tendency for countries with more import ties to have higher import volumes.
+
+**Magnitude of Change:** Since the dependent variable (total_import_volume) is log-transformed, we can interpret the coefficient as a percentage change in the original import volume. Specifically, a one-unit increase in import ties is associated with an estimated increase of approximately 10.66% in the original import volume (not on the log scale). 
+
+**Note: This is greater than the estimated increase in original export volume with a one-unit increase in export ties.**
+
+**Exponential Growth in Export Volume: **
+As countries establish more import ties, their import volumes tend to grow exponentially.
+
+
+### Trade Volume Power
+
+Recap:
+
+$export\,power = \displaystyle \frac{exports}{exports + imports}$
+
+$import\,power = \displaystyle \frac{imports}{exports + imports}$
+
+```{r export-vol-power, fig.cap = "Distribution of Imports/ Exports Volume Power"}
+library(ggpubr)
+
+out_vol_power_table <- data.table(
+  table(cut(vol_df$export_vol_power, breaks = seq(0, 100, by=10), right = TRUE))
+  )
+
+in_vol_power_table <- data.table(
+  table(cut(vol_df$import_vol_power, breaks = seq(0, 100, by=10), right = TRUE))
+  )
+
+a <- hist_plot(
+  table=in_vol_power_table,
+  title="Distribution of Imports Volume Power",
+  xlab="Imports Volume Power Range (%)", 
+  ylab="Frequency"
+  )
+
+b <- hist_plot(
+  table=out_vol_power_table,
+  title="Distribution of Exports Volume Power",
+  xlab="Exports Volume Power Range (%)", 
+  ylab="Frequency"
+  )
+
+ggarrange(a, b, ncol=1, nrow=2)
+
+```
+
+
+In General, more countries have a higher percentage of exports than imports. Well, this is to be expected since countries generally have more export ties than import ties in the year 2000 as we have discovered earlier.
 
 
 
 
 
+# Qn 1b
+```{r graph-structures-all-years }
+# Step 1: Read the edge list from the .txt file
+file_path_2005 <- here("indiv-project/trade-network/2000.net")
+g2000 <- read_graph(file_path_2000,format="pajek")
 
+str(g2000)
+```
