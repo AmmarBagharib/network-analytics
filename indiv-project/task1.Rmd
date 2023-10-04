@@ -83,50 +83,20 @@ knitr::kable(
 
 - The values range from 0.7591 to 0.9933, suggesting that many countries form tightly interconnected groups in trade networks.
 
-
-### Degree Distribution
-
-```{r}
-# Country Exports Table
-deg_df <- data.table(as_long_data_frame(g2000)[c("from_name", "to_name")])
-out_deg_df <- deg_df[,.(cnt=.N),by=.(to_name)]
-in_deg_df <- deg_df[,.(cnt=.N),by=.(from_name)]
-```
-
-#### Exports Distribution
-
-```{r out-degree-plot, fig.cap="Out Degree Distribution"}
-# Create a histogram using ggplot2
-exports_plot <- ggplot(out_deg_df, aes(x = cnt)) +
-  geom_histogram(binwidth = 10, fill = "grey", color = "black") +  # Adjust binwidth and colors
+```{r hist-plot-function}
+#create histogram function
+hist_plot <- function(table, title, xlab, ylab){
+  ggplot(table, aes(x = factor(V1, levels = unique(V1)), y = N)) +
+  geom_bar(stat = "identity", fill = "grey") +
+  geom_text(aes(label = N), vjust = -0.3) +  # Add labels above the bars
   labs(
-    title = "Histogram of Out Degree (Exports)",
-    x = "Degree",
-    y = "Number of Countries Exported to"
-  ) + scale_x_continuous(breaks=seq(0,161,10))
-
-exports_plot
+    title = title,
+    x = xlab,
+    y = ylab
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
 ```
-
-#### Imports Distribution
-
-```{r in-degree-plot, fig.cap="In Degree Distribution"}
-# Create a histogram using ggplot2
-imports_plot <- ggplot(in_deg_df, aes(x = cnt)) +
-  geom_histogram(binwidth = 10, fill = "grey", color = "black") +  # Adjust binwidth and colors
-  labs(
-    title = "Histogram of In Degree (Imports)",
-    x = "Degree",
-    y = "Number of Countries Exported to"
-  ) + scale_x_continuous(breaks=seq(0,161,10))
-
-imports_plot
-```
-
-Brief description of the degree distribution:
-
-Based on Figure \@ref(fig:degree-plot)
-The degree distribution provides insights into how countries in the trade network are connected or how many connections (edges) they have. 
 
 ### Closeness Distribution
 
@@ -150,32 +120,31 @@ nan_vertices <- which(is.nan(closeness_values))
 # Remove vertices with NaN closeness centrality from the graph
 g2000_filtered <- delete.vertices(g2000, nan_vertices)
 
-hist_closeness <- hist(
-  closeness(g2000_filtered),
-  breaks=seq(0,max(closeness(g2000_filtered))+ 0.00005,by=0.00005),
-  xlim=c(0.0006, 0.00105),
-  main="Closeness Distribution",
-  xlab="Closeness",
-  ylab="Number of Countries"
+closeness_vector <- closeness(g2000_filtered)
+max_closeness <- max(closeness_vector)
+min_closeness <- min(closeness_vector)
+
+close_table <- data.table(
+  table(
+    cut(closeness_vector, breaks = seq(min_closeness, max_closeness, 
+                                       by=(max_closeness - min_closeness)/10), 
+        right = TRUE))
   )
 
-hist_closeness_df <- data.frame(
-  Midpoint = hist_closeness$mids,
-  Frequency = hist_closeness$counts
-)
-
-knitr::kable(hist_closeness_df, caption = "Closeness Histogram Bins Table")
+# Create a histogram
+hist_plot(
+  table=close_table,
+  title="Closeness Distribution",
+  xlab="Closeness", 
+  ylab="Number of Countries"
+  )
 ```
 
-Overall, the closeness centrality values are generally very low, with a maximum of no more than 0.0012. Nonetheless, here are some findings:
+Overall, the closeness centrality values are generally very low, with a maximum of no more than 0.00116. Nonetheless, here are some findings:
 
-Based on Figure \@ref(fig:filtered-close-plot) 121 out of 161 countries have closeness centrality of between 0.000775 and 0.000975, which is relatively very high.
+Based on Figure \@ref(fig:filtered-close-plot) 124 out of 161 countries have closeness centrality $\ge$ 0.000702, which is relatively high.
 
-- Only 1 country is within the highest closeness centrality bin of 0.001175, indicating that it is very well-connected and have shorter average distances to other countries, indicating strong trade relationships. This can mean that it in the year 2000, it was a Trade Global powerhouse.
-
-- The presence of 19 countries with missing closeness centrality values suggests that these countries might only accept imports and not do exports.
-
-- The trade network may consist of multiple connected components, with some countries forming isolated sub-networks. Countries within such isolated components may have NaN closeness centrality values.
+- The presence of `r length(nan_vertices)` countries with missing closeness centrality values suggests that these countries might only accept imports and not do exports.
 
 ### Eigen Centrality
 
@@ -189,28 +158,289 @@ hist(
 ```
 
 ```{r filtered-eigen-plot, fig.cap="subset of Eigen Centrality" }
-hist(
-  eigen_centrality(g2000)$vector,
-  breaks=seq(0,max(eigen_centrality(g2000)$vector)+ 0.00005,by=0.001),
-  xlim=c(0, 0.01),
-  main="Eigen Centrality Distribution",
-  xlab="Eigen Centrality",
+eigen_cent_table <- data.table(
+  table(cut(eigen_centrality(g2000)$vector, breaks = seq(0, 0.01, by=0.001), 
+        right = TRUE))
+  )
+
+# Create a histogram
+hist_plot(
+  table=eigen_cent_table,
+  title="Eigen Centrality Distribution",
+  xlab="Eigen Centrality", 
   ylab="Number of Countries"
   )
 ```
 
-Based on Figure \@ref(fig:filtered-eigen-plot) approximately 60 countries have eigen centrality values of between 0 to 0.001, and this forms the majority of the countries.  
+Based on Figure \@ref(fig:filtered-eigen-plot) 59 countries have eigen centrality values of between 0 to 0.001, and this forms the majority of the countries.  
 
-- Countries with eigen centrality values in this range are likely to be peripheral or less influential in the global trade network. They may have limited trade connections or trade relationships that are not strongly influential on a global scale.
+- Countries with eigen centrality values in this range are likely to be less influential in the global trade network. They may have limited trade connections or trade relationships that are not strongly influential on a global scale.
 
 - These countries may not play a significant role in shaping global trade patterns. They might have relatively small trade volumes or trade primarily with a limited set of partners.
 
 - Their influence on the network's structure and dynamics is relatively low, and they are less likely to act as intermediaries in trade routes.
 
-The second largest group of countries, approximately 20, have eigen centrality values of between 0.001 to 0.002.
+The second largest group of countries, approximately 17, have eigen centrality values of between 0.001 to 0.002.
 
 - Countries falling within this range have a somewhat more significant influence on the trade network compared to those in the lower eigen centrality range. They may have more extensive trade connections and contribute to regional trade patterns.
 
 - These countries may play key roles in regional trade blocs or economic partnerships, influencing trade dynamics within their respective regions.
 
 - While not among the most influential in the global trade network, they have a moderate degree of influence on the network's structure and connectivity.
+
+There are very few countries with relatively high eigen centralities, meaning in the year 2000, there was a lack of trade power-hubs.
+
+
+### Degree Distribution
+
+```{r create-degree-dataframes}
+# Country Exports Table
+deg_df <- data.table(as_long_data_frame(g2000)[c("from_name", "to_name")])
+out_deg_df <- deg_df[,.(cnt=.N),by=.(from_name)]
+in_deg_df <- deg_df[,.(cnt=.N),by=.(to_name)]
+```
+
+#### Exports Distribution
+
+```{r out-degree-plot, fig.cap="Out Degree Distribution"}
+out_deg_table <- data.table(
+  table(cut(out_deg_df$cnt, breaks = seq(0, 161, by=10), right = TRUE))
+  )[(N)!=0] #remove bins that does not represent any country
+
+# Create a histogram
+hist_plot(
+  table=out_deg_table,
+  title="Distribution of Exports",
+  xlab="Export Range", 
+  ylab="Frequency"
+  )
+```
+
+- The export distribution histogram is generally left-skewed. This means that there are more countries with higher export counts (toward the right side of the distribution) than with lower export counts (toward the left side of the distribution).
+
+- If we look at the distribution from left to right, we can observe that the frequency counts generally decrease as we move from high export count ranges to low export count ranges. 
+
+#### Imports Distribution
+
+```{r in-degree-plot, fig.cap="In Degree Distribution"}
+in_deg_table <- data.table(
+  table(cut(in_deg_df$cnt, breaks = seq(0, 161, by=10), right = TRUE)) #intervals are left-closed, meaning that the left endpoint is included in the interval, but the right endpoint is not
+  )[(N)!=0] #remove bins that does not represent any country
+
+# Create a histogram
+hist_plot(
+  table=in_deg_table,
+  title="Distribution of Imports",
+  xlab="Import Range", 
+  ylab="Frequency"
+  )
+```
+
+- Similar to the export distribution, the import distribution is also left-skewed; This means that there are more countries with higher import counts than with lower import counts
+
+- 38 countries import from > 130 countries
+
+- Most countries fall into the middle and lower import count ranges, indicating that the majority of countries have moderate to lower levels of imports. These countries may have smaller markets or lower consumer demand for imports.
+
+Brief description of the degree distribution:
+
+Based on Figure \@ref(fig:in-degree-plot) and Figure \@ref(fig:out-degree-plot)
+We can understand that most countries are generally well connected. However, we should explore the distribution of export power and import power of each country We can define export and import power as follows:
+
+$export power = \displaystyle \frac{exports}{exports + imports}$
+
+$import power = \displaystyle \frac{imports}{exports + imports}$
+
+Let us first look at it the export/ import power from a **degree** perspective
+
+```{r export-import-table}
+# Perform the outer join
+df2 <- merge(out_deg_df, in_deg_df, by.x = "from_name", by.y = "to_name", all = TRUE)
+
+# Replace missing values (NA) with 0 in the resulting dataframe
+df2[is.na(df2)] <- 0
+
+# Rename columns
+setnames(df2, c("country", "export_cnt", "import_cnt"))
+
+# Add 'export_degree_power' and 'import_degree_power' columns
+df2[, export_degree_power := round(export_cnt / (export_cnt + import_cnt), 3) * 100]
+df2[, import_degree_power := round(import_cnt / (export_cnt + import_cnt), 3) * 100]
+
+# Summary
+knitr::kable(
+  summary(df2),
+  caption = "Export and Import Power Summary"
+)
+```
+
+#### Export Power Degree Distribution
+
+```{r export-degree-power-distribution, fig.cap="Out Degree Power Distribution"}
+out_deg_power_table <- data.table(
+  table(cut(df2$export_degree_power, breaks = seq(0, 65, by=5), right = TRUE))
+  )[(N)!=0]
+
+hist_plot(
+  table=out_deg_power_table,
+  title="Distribution of Exports Degree Power",
+  xlab="Exports Degree Power Range (%)", 
+  ylab="Frequency"
+  )
+```
+
+#### Import Power Degree Distribution
+
+```{r import-degree-power-distribution, fig.cap="In Degree Power Distribution"}
+in_deg_power_table <- data.table(
+  table(cut(df2$import_degree_power, breaks = seq(35, 100, by=5), right = TRUE))
+  )[(N)!=0]
+
+hist_plot(
+  table=in_deg_power_table,
+  title="Distribution of Imports Degree Power",
+  xlab="Imports Degree Power Range (%)", 
+  ylab="Frequency"
+  )
+```
+
+From Fig \@ref(fig:export-degree-power-distribution) and Fig \@ref(fig:import-degree-power-distribution), we can observe that most countries generally engage in more exports than import
+
+- 106 countries have export power of $\ge$ 50%
+
+- 106 countries have import power of $\le$ 50%
+
+This shows that in general, countries generally have more export ties than import ties in the year 2000.
+
+Now, let us take a look at the export/ import power from a **trade volume** perspective
+
+
+### Trade Volume
+
+```{r create-volume-tables}
+trade_df <- data.table(as_long_data_frame(g2000))[, c("weight", "from_name", "to_name")]
+
+# Create export table
+export_table <- trade_df[, .(total_export_volume = sum(weight), export_ties = .N), by = from_name]
+
+# Create import table
+import_table <- trade_df[, .(total_import_volume = sum(weight), import_ties = .N), by = to_name]
+
+# Perform the outer join
+vol_df <- merge(export_table, import_table, by.x = "from_name", by.y = "to_name", all = TRUE)
+
+# Add 'export_vol_power' and 'import_vol_power' columns
+vol_df[, export_vol_power := round(total_export_volume / (total_export_volume + total_import_volume), 3) * 100]
+vol_df[, import_vol_power := round(total_import_volume / (total_export_volume + total_import_volume), 3) * 100]
+
+#average export and import value per country
+vol_df[, ave_export_vol := total_export_volume / export_ties ]
+vol_df[, ave_import_vol := total_import_volume / import_ties ]
+
+# Replace missing values (NA) with 0 in the resulting dataframe
+vol_df[is.na(vol_df)] <- 0
+
+# Rename country column
+setnames(vol_df, old = "from_name", new = "country")
+
+# Summary
+knitr::kable(
+  summary(vol_df),
+  caption = "Export and Import Volume Summary"
+)
+```
+
+#### Export Power Degree Distribution
+
+```{r fig.cap="Export Ties vs Volume"}
+#we use a scatter plot to observe the relationship between the export volume and the number of export ties
+ggplot(vol_df, aes(x=export_ties, y=total_export_volume)) +
+  geom_point() +
+  labs(
+    title = "Export Ties vs Export Volume",
+    x = "Number of Export Ties",
+    y = "Total Export Volume per Country"
+  )
+```
+
+Since the maximum export volume is significantly larger than the minimum export volume, let us try applying log transformation to the export volume, to minimise the absolute difference in export volumes, and try to observe any trends.
+
+```{r fig.cap="Log transformed export volume against Export Ties",message=FALSE, warning=FALSE}
+
+ex_vol_df <- vol_df[export_ties!=0]
+
+#create scatter plot with line of best fit
+ggplot(ex_vol_df, aes(x=export_ties, y=log(total_export_volume))) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE) +
+  labs(
+    title = "Export Ties vs Export Volume",
+    x = "Number of Export Ties",
+    y = "Log(Total Export Volume per Country)"
+  )
+```
+
+```{r lm-exports}
+# Fit a linear regression model
+model <- lm(log2(total_export_volume) ~ export_ties, data = ex_vol_df)
+
+# Extract the slope coefficient
+ex_slope_coefficient <- coef(model)[2]  # Extracts the coefficient for 'export_ties'
+```
+
+**Slope Coefficient of Best Fit line:** `r ex_slope_coefficient`
+
+These are some deductions that can be made:
+
+**Positive Linear Relationship: **
+The log-transformed total export volume and the number of export ties show a positive linear relationship. As the number of export ties increases, the log-transformed export volume tends to increase as well. This suggests that there is a tendency for countries with more export ties to have higher export volumes.
+
+**Magnitude of Change:** Since the dependent variable (total_export_volume) is log-transformed, we can interpret the coefficient as a percentage change in the original export volume. Specifically, a one-unit increase in export ties is associated with an estimated increase of approximately 8.04% in the original export volume (not on the log scale).
+
+**Exponential Growth in Export Volume: **
+The log transformation is often used to stabilize variance when dealing with data that spans several orders of magnitude. In this case, it helps reveal that the growth in export volume is not linear but rather exponential. As countries establish more export ties, their export volumes tend to grow exponentially.
+
+```{r fig.cap="Import Ties vs Volume"}
+#we use a scatter plot to observe the relationship between the export volume and the number of export ties
+ggplot(vol_df, aes(x=import_ties, y=total_import_volume)) +
+  geom_point() +
+  labs(
+    title = "Import Ties vs Import Volume",
+    x = "Number of Import Ties",
+    y = "Total Import Volume per Country"
+  )
+```
+
+Similarly, the maximum import volume is significantly larger than the minimum import volume, let us try applying log transformation to the import volume, to minimise the absolute difference in import volumes, and try to observe any trends.
+
+```{r fig.cap="Log transformed import volume against Import Ties",message=FALSE, warning=FALSE}
+
+im_vol_df <- vol_df[import_ties!=0]
+
+#create scatter plot with line of best fit
+ggplot(im_vol_df, aes(x=import_ties, y=log(total_import_volume))) +
+  geom_point() +
+  geom_smooth(method=lm, se=FALSE) +
+  labs(
+    title = "Import Ties vs Import Volume",
+    x = "Number of Import Ties",
+    y = "Log(Total Import Volume per Country)"
+  )
+```
+
+```{r lm-imports}
+# Fit a linear regression model
+model <- lm(log2(total_import_volume) ~ import_ties, data = im_vol_df)
+
+# Extract the slope coefficient
+im_slope_coefficient <- coef(model)[2]  # Extracts the coefficient for 'export_ties'
+```
+
+**Slope Coefficient of Best Fit line:** `r im_slope_coefficient`
+
+
+
+
+
+
+
