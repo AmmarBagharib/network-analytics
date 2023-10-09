@@ -1,0 +1,132 @@
+
+
+
+```{r}
+# However, we should explore the distribution of export power and import power of each country We can define export and import power as follows:
+
+# $export\,power = \displaystyle \frac{exports}{exports + imports}$
+
+# $import\,power = \displaystyle \frac{imports}{exports + imports}$
+
+# Let us first look at it the export/ import power from a **degree** perspective
+```
+
+
+```{r export-import-table, eval=FALSE, include=FALSE}
+# Perform the outer join
+df2 <- merge(out_deg_df, in_deg_df, by.x = "from_name", by.y = "to_name", all = TRUE)
+
+# Replace missing values (NA) with 0 in the resulting dataframe
+df2[is.na(df2)] <- 0
+
+# Rename columns
+setnames(df2, c("country", "export_cnt", "import_cnt"))
+
+# Add 'export_degree_power' and 'import_degree_power' columns
+df2[, export_degree_power := round(export_cnt / (export_cnt + import_cnt), 3) * 100]
+df2[, import_degree_power := round(import_cnt / (export_cnt + import_cnt), 3) * 100]
+
+# Summary
+knitr::kable(
+  summary(df2),
+  caption = "Export and Import Power Summary"
+)
+```
+
+
+
+```{r export-degree-power-distribution, fig.cap="Out Degree Power", eval=FALSE, include=FALSE}
+#### Export Power Degree Distribution
+
+out_deg_power_table <- data.table(
+  table(cut(df2$export_degree_power, breaks = seq(0, 65, by=5), right = TRUE))
+  )[(N)!=0]
+
+hist_plot(
+  table=out_deg_power_table,
+  title="Distribution of Exports Degree Power",
+  xlab="Exports Degree Power Range (%)", 
+  ylab="Frequency"
+  )
+```
+
+
+
+```{r import-degree-power-distribution, fig.cap="In Degree Power",eval=FALSE,  include=FALSE}
+#### Import Power Degree Distribution
+
+
+in_deg_power_table <- data.table(
+  table(cut(df2$import_degree_power, breaks = seq(35, 100, by=5), right = TRUE))
+  )[(N)!=0]
+
+hist_plot(
+  table=in_deg_power_table,
+  title="Distribution of Imports Degree Power",
+  xlab="Imports Degree Power Range (%)", 
+  ylab="Frequency"
+  )
+```
+
+```{r}
+# From Fig \@ref(fig:export-degree-power-distribution) and Fig \@ref(fig:import-degree-power-distribution), we can observe that most countries generally engage in more exports than import
+# 
+# - 106 countries have export power of $\ge$ 50%
+# 
+# - 106 countries have import power of $\le$ 50%
+# 
+# This shows that in general, countries generally have more export ties than import ties in the year 2000.
+# 
+# Now, let us take a look at the export/ import power from a **trade volume** perspective
+# 
+# [Back to top](#) 
+
+
+```
+
+
+```{r}
+### Trade Volume Power
+#Recap:
+
+#$export\,power = \displaystyle \frac{exports}{exports + imports}$
+
+#$import\,power = \displaystyle \frac{imports}{exports + imports}$
+```
+
+
+
+```{r export-vol-power, eval=FALSE, fig.cap=, include=FALSE}
+
+
+out_vol_power_table <- data.table(
+  table(cut(vol_df$export_vol_power, breaks = seq(0, 100, by=10), right = TRUE))
+  )
+
+in_vol_power_table <- data.table(
+  table(cut(vol_df$import_vol_power, breaks = seq(0, 100, by=10), right = TRUE))
+  )
+
+a <- hist_plot(
+  table=in_vol_power_table,
+  title="Distribution of Imports Volume Power",
+  xlab="Imports Volume Power Range (%)", 
+  ylab="Frequency"
+  )
+
+b <- hist_plot(
+  table=out_vol_power_table,
+  title="Distribution of Exports Volume Power",
+  xlab="Exports Volume Power Range (%)", 
+  ylab="Frequency"
+  )
+
+ggarrange(a, b, ncol=1, nrow=2)
+
+```
+
+
+In General, more countries have a higher percentage of exports than imports. Well, this is to be expected since countries generally have more export ties than import ties in the year 2000 as we have discovered earlier.
+
+
+[Back to top](#) 
