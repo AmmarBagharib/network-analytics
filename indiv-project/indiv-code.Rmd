@@ -1,5 +1,5 @@
 ---
-title: "individual project-qn-1"
+title: "Individual Project"
 author: "Ammar"
 date: "2023-09-03"
 output: 
@@ -289,7 +289,7 @@ knitr::kable(
 
 #### Export Power Degree Distribution
 
-```{r fig.cap="Export Ties vs Volume", eval=FALSE,  include=FALSE}
+```{r exp-vs-vol-plot, fig.cap="Export Ties vs Volume", eval=FALSE,  include=FALSE}
 #we use a scatter plot to observe the relationship between the export volume and the number of export ties
 ggplot(vol_df, aes(x=export_ties, y=total_export_volume)) +
   geom_point() +
@@ -302,7 +302,7 @@ ggplot(vol_df, aes(x=export_ties, y=total_export_volume)) +
 
 Since the maximum export volume is significantly larger than the minimum export volume, let us try applying log transformation to the export volume, to minimise the absolute difference in export volumes, and try to observe any trends.
 
-```{r fig.cap="Log transformed export volume against Export Ties",message=FALSE, warning=FALSE}
+```{r log-transformed-exp-plot, fig.cap="Log transformed export volume against Export Ties",message=FALSE, warning=FALSE}
 
 ex_vol_df <- vol_df[export_ties!=0]
 
@@ -337,7 +337,7 @@ The log-transformed total export volume and the number of export ties show a pos
 **Exponential Growth in Import Volume: **
 The log transformation is often used to stabilize variance when dealing with data that spans several orders of magnitude. In this case, it helps reveal that the growth in export volume is not linear but rather exponential. As countries establish more export ties, their export volumes tend to grow exponentially.
 
-```{r fig.cap="Import Ties vs Volume", eval=FALSE,  include=FALSE}
+```{r imp-vs-vol-plot, fig.cap="Import Ties vs Volume", eval=FALSE,  include=FALSE}
 #we use a scatter plot to observe the relationship between the export volume and the number of export ties
 ggplot(vol_df, aes(x=import_ties, y=total_import_volume)) +
   geom_point() +
@@ -350,7 +350,7 @@ ggplot(vol_df, aes(x=import_ties, y=total_import_volume)) +
 
 Similarly, the maximum import volume is significantly larger than the minimum import volume, let us try applying log transformation to the import volume, to minimise the absolute difference in import volumes, and try to observe any trends.
 
-```{r fig.cap="Log transformed import volume against Import Ties",message=FALSE, warning=FALSE}
+```{r log-transformed-imp-plot, fig.cap="Log transformed import volume against Import Ties",message=FALSE, warning=FALSE}
 
 im_vol_df <- vol_df[import_ties!=0]
 
@@ -471,6 +471,7 @@ knitr::kable(
 )
 ```
 
+
 From the above summary, it seems that the attributes that have undergone **relatively significant** changes:
 
 1. Density
@@ -485,6 +486,8 @@ the attributes that have undergone **no change/ relatively insignificant** chang
 3. Global clustering coefficient
 4. Average clustering Coefficient
 
+[Back to top](#) 
+
 ```{r density-vs-time, fig.cap="Density Over Time"}
 ggplot(graph_att_df, aes(x=year, y=density)) +
     geom_line( color="grey", group=1) +
@@ -494,6 +497,36 @@ ggplot(graph_att_df, aes(x=year, y=density)) +
 ```
 
 **Note:** Since the number of countries in this trade network remains the same, it suffices to plot only number one out of edges vs density against time.
+
+**Increasing Density (2000 to 2010):**
+
+There is a noticeable increase in the network density, with the density rising from 0.634 to 0.721. This suggests that during this period, international trade became more interconnected. Several factors could contribute to this increase:
+
+- **Globalization:** The early 21st century was marked by increased globalization, with countries engaging in more extensive trade relationships. Trade barriers may have been reduced, facilitating trade between nations.
+
+- **Emerging Markets:** The rapid growth of emerging markets, such as China and India, led to expanded trade opportunities, contributing to the densification of the network.
+  
+- **Technological Advances:** Advances in transportation and communication technologies may have made it easier for countries to engage in international trade.
+
+**Stabilization and Slight Decrease (2010 to 2015):**
+
+After 2010, the density of the global trade network stabilizes and even experiences a slight decrease. It goes from 0.721 to 0.701. This phase may indicate a maturation of international trade relationships. Possible reasons include:
+
+- **Economic Uncertainty:** The global financial crisis of 2008 had a significant impact on international trade. The decrease in density during this period may be related to economic uncertainties that led to reduced trade volumes.
+  
+- **Evolving Trade Agreements:** The landscape of international trade agreements and partnerships may have evolved, potentially altering the structure of trade networks.
+  
+- **Trade Policy Shifts:** Some countries may have implemented protectionist trade policies, impacting the density of trade connections.
+
+**Moderate Decrease (2015 to 2018):**
+
+From 2015 to 2018, there is a moderate decrease in network density, from 0.701 to 0.661. Several factors could contribute to this decline:
+
+- **Trade Tensions:** During this period, there were escalating trade tensions between major economies, such as the United States and China. Trade disputes and tariff wars could have disrupted trade networks, reducing their density.
+  
+- **Economic Slowdown:** Global economic growth rates may have slowed down, affecting trade volumes. Reduced economic activity could lead to a reduction in the number of trade relationships.
+
+[Back to top](#) 
 
 ```{r cliques-vs-time, fig.cap="Number of cliques Over Time"}
 ggplot(graph_att_df, aes(x=year, y=number_of_cliques)) +
@@ -513,6 +546,8 @@ ggplot(graph_att_df, aes(x=year, y=number_of_cliques)) +
 **Sustained Complexity (2010-2015):** The number of cliques remains at 96 between 2010 and 2015, indicating a level of stability in trade relationships. During this time, countries likely continued to deepen their trade ties while maintaining existing ones.
 
 **Marginal Increase (2015-2018):** The trend edges slightly upward, reaching 97 cliques in 2018. This small increase may be indicative of ongoing trade evolution, with countries exploring additional trade partnerships.
+
+[Back to top](#) 
 
 
 ```{r diameter-vs-time, fig.cap="Diameter Over Time"}
@@ -537,7 +572,401 @@ ggplot(graph_att_df, aes(x=year, y=diameter)) +
 
 - **Digital Commerce:** The rise of e-commerce and digital trade expanded the range of goods and services exchanged, creating additional trade connections.
 
+[Back to top](#) 
+
+# Qn 2a
+
+```{r compute-diameter-function}
+# Function to compute diameter after node removal
+graph_deletion <- function(graph, removal_fraction, approach) {
+  
+  #this function takes in a graph object, the percentage of nodes to be removed, and the approach to deletion, namely "random" or "targeted"
+  #targeted approach is using centrality 
+  
+  num_nodes_to_remove <- floor(vcount(graph) * removal_fraction) #round down number of ndoes to be removed
+  
+  # Create a copy of the original graph
+  g_copy <- copy(graph)
+  
+  # Sort nodes by centrality measure if using targeted deletion
+  if (approach == "targeted") {
+    close_centr <- igraph::closeness(graph)
+    nodes_to_remove <- order(close_centr, decreasing = TRUE)[1:num_nodes_to_remove]
+  } else {
+    # Randomly select nodes for removal
+    nodes_to_remove <- sample(1:vcount(graph), num_nodes_to_remove)
+  }
+  
+  # Remove selected nodes
+  g_copy <- delete_vertices(g_copy, nodes_to_remove)
+  
+  return(g_copy)
+}
+
+```
+
+```{r removal-fractions}
+set.seed(32)
+# Define a range of fractions for node removal
+removal_fractions <- seq(0, 0.9, by = 0.1)
+```
+
+```{r}
+# Function for graph deletion and plotting using ggplot2
+graph_deletion_diameter_plot_ggplot <- function(graph, removal_fractions, year, title = TRUE, label = TRUE) {
+  
+  # Initialize data frame to store results
+  result_data <- data.frame(Fraction = numeric(0), Diameter = numeric(0), Approach = character(0))
+  
+  # Perform node removal for each fraction and approach
+  for (fraction in removal_fractions) {
+    for (approach in c("random", "targeted")) {
+      g_copy <- graph_deletion(graph, fraction, approach)
+      diameter_value <- diameter(g_copy)
+      result_data <- rbind(result_data, data.frame(Fraction = fraction, 
+                                                   Diameter = diameter_value, 
+                                                   Approach = approach))
+    }
+  }
+
+  # Create a ggplot2 plot
+  plot <- ggplot(result_data, aes(x = Fraction, y = Diameter, color = Approach)) +
+    geom_line() +
+    xlab("Fraction of Nodes Removed") +
+    ylab("Diameter") +
+    scale_color_manual(values = c("blue", "red")) +
+    theme_minimal()
+  
+  # Add a title if title = TRUE
+  if (title) {
+    plot <- plot + ggtitle(paste("Change in Diameter vs. Node Removal", year))
+  } else {
+    plot <- plot + ggtitle(year)
+  }
+  
+  # Show the legend if label = TRUE
+  if (label) {
+    plot <- plot + labs(color = "Approach") +
+      theme(legend.position = "top",
+            legend.justification='left',
+            legend.direction='horizontal')
+  }
+  
+  return(plot)
+}
+```
+
+```{r graph-plot}
+graph_deletion_diameter_plot_ggplot(g2018, removal_fractions, "2018")
+```
+
+[Back to top](#) 
+
+# Qn 2b
+
+In addition to diameter, another attribute that can potentially measure the resilience of the trade network to node removals is the "Size of the Giant Component" or "Size of the Largest Connected Component."
+
+The Size of the Giant Component represents the number of nodes within the largest connected component of the network after node removal. A higher Size of the Giant Component indicates a more resilient network because it signifies that a larger portion of the network remains connected despite node removals.
+
+```{r compute-giant-component-function}
+# Function to compute Size of the Giant Component after node removal
+compute_giant_component_after_removal <- function(graph, removal_fraction, approach) {
+  num_nodes_to_remove <- floor(vcount(graph) * removal_fraction)
+  
+  # Create a copy of the original graph
+  g_copy <- copy(graph)
+  
+  # Sort nodes by centrality measure if using targeted deletion
+  if (approach == "targeted") {
+    centrality <- igraph::closeness(graph)
+    nodes_to_remove <- order(centrality, decreasing = TRUE)[1:num_nodes_to_remove]
+  } else {
+    # Randomly select nodes for removal
+    nodes_to_remove <- sample(1:vcount(graph), num_nodes_to_remove)
+  }
+  
+  # Remove selected nodes
+  g_copy <- delete_vertices(g_copy, nodes_to_remove)
+  
+  # Compute and return the size of the giant component of the modified graph
+  largest_component <- clusters(g_copy)$csize
+  max(largest_component)
+}
+```
+
+```{r t-test-function}
+giant_component_ttest <- function(graph, removal_fractions, significance_val=0.05){
+  # Initialize vectors to store the Size of the Giant Component
+  giant_component_random <- numeric(length(removal_fractions))
+  giant_component_targeted <- numeric(length(removal_fractions))
+
+  # Perform computation for Size of the Giant Component after node removal
+  for (i in 1:length(removal_fractions)) {
+    fraction <- removal_fractions[i]
+    
+    # Random node deletion approach
+    giant_component_random[i] <- compute_giant_component_after_removal(graph, fraction, "random")
+    
+    # Targeted node deletion approach
+    giant_component_targeted[i] <- compute_giant_component_after_removal(graph, fraction, "targeted")
+  }
+  
+  # Perform t-test to compare the means of the Size of the Giant Component for random and targeted deletions
+  t_test_result <- t.test(giant_component_random, giant_component_targeted, alternative = "two.sided")
+  }
+```
 
 
+```{r 2018-giant-component-ttest}
+
+result <- giant_component_ttest(g2018, removal_fractions, significance_val=0.05)
+
+# Print the results of the t-test
+cat("T-test results:\n")
+print(result)
+```
+
+In summary, the t-test results show that there is **no strong evidence** to conclude that the means of the Size of the Giant Component for random and targeted node deletions are significantly different. The relatively high p-value (0.8361) suggests that the observed difference in means could be due to random variation, and it is **not statistically significant**.
+
+[Back to top](#) 
+
+```{r import-graphs}
+file_path_2000 <- here("indiv-project/trade-network/2000.net")
+g2000 <- read_graph(file_path_2000,format="pajek")
+
+file_path_2005 <- here("indiv-project/trade-network/2005.net")
+g2005 <- read_graph(file_path_2005,format="pajek")
+
+file_path_2010 <- here("indiv-project/trade-network/2010.net")
+g2010 <- read_graph(file_path_2010,format="pajek")
+
+file_path_2015 <- here("indiv-project/trade-network/2015.net")
+g2015 <- read_graph(file_path_2015,format="pajek")
+```
+
+# Qn 2c
 
 
+```{r deletion-plot-over-the-years}
+# Create a list of graph objects
+graph_list <- list(g2000, g2005, g2010, g2015, g2018)
+
+# Create a list of years
+years <- c("2000", "2005", "2010", "2015", "2018")
+
+# Initialize an empty data frame to store the results
+result_data <- data.frame()
+
+# Loop through each graph and year
+for (i in 1:length(graph_list)) {
+  graph <- graph_list[[i]]
+  year <- years[i]
+  
+  # Perform node removal for each fraction and approach
+  for (fraction in removal_fractions) {
+    for (approach in c("random", "targeted")) {
+      g_copy <- graph_deletion(graph, fraction, approach)
+      diameter_value <- diameter(g_copy)
+      result_data <- rbind(result_data, data.frame(Fraction = fraction, Diameter = diameter_value, Approach = approach, Year = year))
+    }
+  }
+}
+
+# Create a ggplot2 plot using facet_grid
+plot <- ggplot(result_data, aes(x = Fraction, y = Diameter, color = Approach)) +
+  geom_line() +
+  xlab("Fraction of Nodes Removed") +
+  ylab("Change in Diameter") +
+  scale_color_manual(values = c("blue", "red")) +
+  theme_minimal() +
+  facet_wrap(Year ~ ., ncol=5) 
+
+# Show the plot
+print(plot)
+
+```
+
+We can see that across the years, there was a **highly significant** change in diameter of the graph is highest in 2015 followed by 2018. However, when we compare them against the years 2000 - 2010, there was **minimal difference** in the change in diameter as the nodes were deleted. In 2000 and 2010, there was a slight spike in the change of diameter after the fraction of nodes deleted increased past ~ 0.7.
+
+This tells us that **between 2000-2010**, the network was **much more resilient** as compared to **after the year 2015**.
+
+```{r p-value-function}
+get_p_value <- function(ttest){
+  return(ttest$p.value)
+}
+```
+
+```{r t-test-over-the-years}
+
+ttest_years <- data.frame(
+  year = c("2000", "2005", "2010", "2015", "2018"),
+  p_value = c(
+    get_p_value(giant_component_ttest(g2000, removal_fractions, significance_val=0.05)),
+    get_p_value(giant_component_ttest(g2005, removal_fractions, significance_val=0.05)),
+    get_p_value(giant_component_ttest(g2010, removal_fractions, significance_val=0.05)),
+    get_p_value(giant_component_ttest(g2015, removal_fractions, significance_val=0.05)),
+    get_p_value(giant_component_ttest(g2018, removal_fractions, significance_val=0.05))
+  )
+)
+
+knitr::kable(
+  ttest_years,
+  caption = "T-test Over the Years"
+)
+```
+
+In summary, the t-test results show that there is **no strong evidence** to conclude that the means of the Size of the Giant Component for random and targeted node deletions are significantly different across all the years. However, it is weird to note that the p-value of these t-tests remain the same from the year 2000 to 2015, only changing in 2015.
+
+```{r t-test-check, include=FALSE}
+# seconday check of t-test
+giant_component_random2000 <- numeric(length(removal_fractions))
+giant_component_targeted2000 <- numeric(length(removal_fractions))
+
+giant_component_random2005 <- numeric(length(removal_fractions))
+giant_component_targeted2005 <- numeric(length(removal_fractions))
+
+giant_component_random2010 <- numeric(length(removal_fractions))
+giant_component_targeted2010 <- numeric(length(removal_fractions))
+
+giant_component_random2015 <- numeric(length(removal_fractions))
+giant_component_targeted2015 <- numeric(length(removal_fractions))
+
+giant_component_random2018 <- numeric(length(removal_fractions))
+giant_component_targeted2018 <- numeric(length(removal_fractions))
+  
+for (i in 1:length(removal_fractions)) {
+    fraction <- removal_fractions[i]
+    
+    # Random node deletion approach
+    giant_component_random2000[i] <- compute_giant_component_after_removal(g2000, fraction, "random")
+    giant_component_random2005[i] <- compute_giant_component_after_removal(g2005, fraction, "random")
+    giant_component_random2010[i] <- compute_giant_component_after_removal(g2010, fraction, "random")
+    giant_component_random2015[i] <- compute_giant_component_after_removal(g2015, fraction, "random")
+    giant_component_random2018[i] <- compute_giant_component_after_removal(g2018, fraction, "random")
+
+    
+    # Targeted node deletion approach
+    giant_component_targeted2000[i] <- compute_giant_component_after_removal(g2000, fraction, "targeted")
+    giant_component_targeted2005[i] <- compute_giant_component_after_removal(g2005, fraction, "targeted")
+    giant_component_targeted2010[i] <- compute_giant_component_after_removal(g2010, fraction, "targeted")
+    giant_component_targeted2015[i] <- compute_giant_component_after_removal(g2015, fraction, "targeted")
+    giant_component_targeted2018[i] <- compute_giant_component_after_removal(g2018, fraction, "targeted")
+
+
+    }
+
+giant_component_random2000
+giant_component_targeted2000
+
+
+giant_component_random2005
+giant_component_targeted2005
+
+giant_component_random2010
+giant_component_targeted2010
+
+giant_component_random2015
+giant_component_targeted2015
+
+giant_component_random2018
+giant_component_targeted2018
+```
+
+
+[Back to top](#) 
+
+# Task 2 qn 1
+
+I do believe the key findings of this article, particularly the idea that obesity can spread through social networks. This is consistent with the broader understanding of how behaviors and attitudes can spread within social groups. However, the extent to which these findings can be generalized to the broader population may vary.
+
+**More Likely to Hold True:**
+
+**Existence of Obesity Clusters:** 
+
+The concept of homophily, or "birds of a feather flock together", is a well-established principle in sociology. For example, studies have shown that people often form friendships with those who share similar characteristics, such as age, race, religion, and socioeconomic status. In the context of obesity, it's plausible that individuals with similar dietary habits, physical activity levels, and attitudes towards health would form social connections, leading to clusters of obesity.
+
+**Influence of Social Ties:** 
+
+The finding that a person's chances of becoming obese increase if a friend, sibling, or spouse becomes obese also seems likely to hold true. The influence of social ties on behaviors and attitudes is well-documented. For instance, studies on smoking and alcohol consumption have shown that these behaviors can spread within social networks. If a person's friends or family members smoke or drink heavily, they are more likely to adopt these behaviors themselves. Similarly, if a person's social ties become obese, they may adopt similar lifestyle habits, leading to weight gain.
+
+**Less Likely to Hold True:**
+
+**Same-Sex Influence:** 
+
+While the study found that same-sex individuals have a greater influence on each other's obesity status, this may not be universally applicable. For example, in societies with strict gender roles, men and women may have different lifestyle habits and social norms related to diet and physical activity, which could influence obesity rates differently. Additionally, individual personality traits and personal preferences could also play a role in the influence of same-sex relationships on obesity.
+
+**Lack of Neighbor Influence:** 
+
+The study found no significant influence of neighbors on an individual's obesity status. This may not be universally applicable. In different geographical or cultural contexts, neighbors might play a more significant role, especially where community activities and interactions are common. The study found no significant influence of neighbors on an individual's obesity status. However, this may not hold true in all contexts. For example, in communities where neighbors frequently interact and participate in communal activities, such as neighborhood potlucks or group exercise classes, neighbors could potentially have a significant influence on each other's lifestyle habits and, consequently, obesity status.
+
+For example, based on my personal experience, on anecdotal evidence, "Kampong" environments in rural areas within Malaysia, have a high proportion of obese individuals, and the community is tightly connected, with often many house visits and community events such as weddings from time to time. Such a study should also keep in mind the cultural differences within the community of interest.
+
+[Back to top](#) 
+
+# Task 2 qn 2
+
+**Same Research Question:**
+
+- "How does obesity spread through social networks?"
+
+**Data Collection:**
+
+**1. Diverse Community Selection:**
+
+   - To capture a more comprehensive view, the study should include diverse types of communities, such as urban and rural areas, as well as communities that vary in socioeconomic status, from extremely affluent to low-income neighborhoods. This diversity will help identify how obesity spreads across different social and economic contexts.
+
+**2. Network Data:**
+
+   - Collect extensive data on the social networks in these communities, including details on friendships, family connections, and professional relationships. This data will be gathered through surveys, interviews, and participant observation.
+
+**3. Technological Tools:**
+
+   - Incorporate technological tools to enhance data collection accuracy and real-time monitoring:
+     
+     - **Social Media Platforms:** Use social media data to map online social networks. Platforms like Facebook, Twitter, and LinkedIn can provide valuable information about digital connections.
+     
+     - **Wearable Technology:** Distribute wearable devices (e.g., fitness trackers) to participants to collect real-time data on lifestyle habits, physical activity, and health-related metrics. These devices can also track in-person interactions, as some offer proximity sensing.
+
+**4. Survey and Questionnaire Data:**
+
+   - Administer detailed surveys and questionnaires to participants to collect information on individual-level characteristics, including age, gender, BMI, dietary habits, physical activity, and health history. These surveys should be administered at multiple time points to track changes.
+
+**5. Social Interaction Logs:**
+
+   - Develop mobile apps or tools that allow participants to log their social interactions and the context of those interactions. These logs can provide insights into the frequency and nature of social connections.
+
+**Data Analysis:**
+
+**1. Network Analysis:**
+
+   - Use network analysis techniques to identify clusters of obesity within the communities. Analyze the influence of social ties on weight changes by examining network centrality, density, and modularity.
+
+**2. Statistical Analysis:**
+
+   - Employ advanced statistical methods to:
+   
+     - Model the likelihood of obesity transmission within and between communities, considering factors like the strength of social ties and geographical proximity.
+     
+     - Control for potential confounding variables, including age, gender, socioeconomic status, and community type (urban/rural, affluent/poor).
+     
+     - Explore interaction effects to understand how various factors collectively influence obesity spread.
+
+**3. Longitudinal Analysis:**
+
+   - Perform longitudinal data analysis to track the temporal aspects of obesity transmission over time in different communities.
+
+**Interpretation and Conclusions:**
+
+   - Summarize findings on the spread of obesity, with a focus on variations across different community types.
+   
+   - Identify key influencers and clusters in each community, and analyze their impact on obesity transmission.
+   
+   - Draw conclusions about the factors contributing to the spread of obesity and their implications for public health strategies in various contexts.
+
+**Practical Implications:**
+
+   - Translate research findings into practical interventions, customized for each community type, and consider potential public health policies tailored to specific needs.
+
+This comprehensive research design would allow for a more nuanced understanding of how obesity spreads through social networks in diverse communities and provide insights into the role of technological tools and advanced statistical analysis in public health research.
+
+[Back to top](#) 
